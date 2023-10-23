@@ -1,53 +1,44 @@
-var throttle = require('lodash.throttle');
+import throttle from 'lodash.throttle';
 
-const feedbackForm = document.querySelector('.feedback-form');
-const savedDataKey = 'feedback-form-state';
+const form = document.querySelector('.feedback-form');
+const inputEmail = form.elements.email;
+const inputMessage = form.elements.message;
 
-const feedbackFormData = {
-  Email: '',
-  Message: '',
-};
+let formData = {};
 
-function setItem() {
-  feedbackFormData.Email = feedbackForm.elements.email.value;
-  feedbackFormData.Message = feedbackForm.elements.message.value;
-  console.log(feedbackFormData);
-  localStorage.setItem(savedDataKey, JSON.stringify(feedbackFormData));
+initForm();
+
+form.addEventListener('input', throttle(onFormInput, 500));
+form.addEventListener('submit', onFormSubmit);
+
+function onFormInput(e) {
+  formData[e.target.name] = e.target.value;
+  localStorage.setItem('feedback-form-state', JSON.stringify(formData));
 }
 
-const throttledSetItem = throttle(setItem, 1000);
+function onFormSubmit(e) {
+  e.preventDefault();
+  
+  if (!formData.email || !formData.message) {
+    alert("Усі поля мають бути заповнені!");
+    return;
+  }
+  
+  console.log(formData);
+  formData = {};
+  form.reset();
+  localStorage.removeItem('feedback-form-state');
+}
 
-function getItem() {
-  const savedData = localStorage.getItem(savedDataKey);
+
+function initForm() {
+  let savedData = localStorage.getItem('feedback-form-state');
+  
   if (savedData) {
-    // const loadedData = JSON.parse(savedData);
-    const { Email, Message } = JSON.parse(savedData);
-    // console.log(loadedData);
-    console.log({ Email, Message });
-    // feedbackForm.elements.email.value = loadedData['Email'];
-    // feedbackForm.elements.message.value = loadedData['Message'];
-    feedbackForm.elements.email.value = Email;
-    feedbackForm.elements.message.value = Message;
-    feedbackFormData.Email = feedbackForm.elements.email.value;
-    feedbackFormData.Message = feedbackForm.elements.message.value;
+    savedData = JSON.parse(savedData);
+    inputEmail.value = savedData.email || '';
+    inputMessage.value = savedData.message || '';
+    formData = savedData;
+    
   }
 }
-
-function removeItem(event) {
-  event.preventDefault();
-  if (
-    feedbackForm.elements.email.value === '' ||
-    feedbackForm.elements.message.value.trim() === ''
-  ) {
-    alert('Please fill in all the fields!');
-  } else {
-    localStorage.removeItem(savedDataKey);
-    console.log(feedbackFormData);
-    feedbackForm.reset();
-  }
-}
-
-getItem();
-
-feedbackForm.addEventListener('input', throttledSetItem);
-feedbackForm.addEventListener('submit', removeItem);
